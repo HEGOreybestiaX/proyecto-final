@@ -14,7 +14,7 @@ import {
   getLevelStats,
   getTotalCompletedLessons,
   readPlayerProfile,
-  upsertPlayerProfile,
+  updatePlayerProfile,
 } from '@/lib/nexus-progress';
 import { useSpeech } from '@/hooks/useSpeech';
 import { useSound } from '@/hooks/useSound';
@@ -638,10 +638,11 @@ export default function LessonsClient() {
 
     if (isCorrect) {
       const xpGained = currentQuestion.xp;
-      const currentProfile = readPlayerProfile() ?? ensurePlayerProfile();
-      const newXP = currentProfile.xp + xpGained;
-      const nextProfile = upsertPlayerProfile({ xp: newXP });
-      const prevLevel = getLevelStats(currentProfile.xp).level;
+      // FIX: Atomic update — reads freshest profile, adds XP, saves in one call.
+      // Prevents race conditions from stale in-memory values.
+      const prevProfile = readPlayerProfile() ?? ensurePlayerProfile();
+      const prevLevel = getLevelStats(prevProfile.xp).level;
+      const nextProfile = updatePlayerProfile((p) => ({ xp: p.xp + xpGained }));
       const nextLevel = getLevelStats(nextProfile.xp).level;
       setTotalXP(nextProfile.xp);
       setPlayerLevel(nextLevel);
@@ -684,6 +685,8 @@ export default function LessonsClient() {
       }, 400);
     } else {
       if (currentLesson) {
+        // FIX: completeLesson now reads the freshest profile internally and
+        // awards LESSON_REWARD_XP only if not already completed.
         const currentProfile = readPlayerProfile() ?? ensurePlayerProfile();
         const updatedProfile = completeLesson(
           currentProfile,
@@ -691,6 +694,7 @@ export default function LessonsClient() {
           currentLesson.id
         );
         setCompletedLessonsCount(getTotalCompletedLessons(updatedProfile));
+        // Sync XP and level from the saved profile (includes bonus XP)
         setTotalXP(updatedProfile.xp);
         setPlayerLevel(getLevelStats(updatedProfile.xp).level);
       }

@@ -2,6 +2,9 @@
 
 export const PLAYER_STORAGE_KEY = 'nexus_player_data';
 
+// XP awarded when a lesson is fully completed
+export const LESSON_REWARD_XP = 150;
+
 const LEGACY_STORAGE_KEYS = [
   'nexus_xp',
   'nexus_progress',
@@ -169,6 +172,7 @@ export function createInitialPlayerProfile(input: {
 
 export function ensurePlayerProfile(fallback?: Partial<PlayerProfile>) {
   const current = readPlayerProfile();
+  // FIX: Only create a new profile when none exists — never overwrite existing data
   if (current) return current;
 
   return savePlayerProfile(
@@ -181,6 +185,19 @@ export function ensurePlayerProfile(fallback?: Partial<PlayerProfile>) {
   );
 }
 
+/**
+ * Atomic profile update: reads the freshest profile, applies the updater
+ * function, and saves the result in a single operation to prevent race
+ * conditions caused by multiple separate reads/writes.
+ */
+export function updatePlayerProfile(
+  updater: (profile: PlayerProfile) => Partial<PlayerProfile>
+): PlayerProfile {
+  const current = readPlayerProfile() ?? ensurePlayerProfile();
+  const updates = updater(current);
+  return savePlayerProfile({ ...current, ...updates });
+}
+
 export function getTotalCompletedLessons(profile: PlayerProfile | null) {
   return profile?.completedLessons.length ?? 0;
 }
@@ -190,15 +207,26 @@ export function hasCompletedLesson(profile: PlayerProfile | null, kingdomId: str
   return profile.completedLessons.includes(createLessonCompletionKey(kingdomId, lessonId));
 }
 
-export function completeLesson(profile: PlayerProfile, kingdomId: string, lessonId: string) {
+export function completeLesson(_passedProfile: PlayerProfile, kingdomId: string, lessonId: string) {
+  // FIX: Always read the freshest profile to avoid stale-closure / desync issues.
+  // The passed profile is accepted for API compatibility but we re-read from storage
+  // so that any XP earned during the lesson is already reflected.
+  const current = readPlayerProfile() ?? ensurePlayerProfile();
+
   const lessonKey = createLessonCompletionKey(kingdomId, lessonId);
-  const alreadyCompleted = profile.completedLessons.includes(lessonKey);
+  const alreadyCompleted = current.completedLessons.includes(lessonKey);
   const now = new Date().toISOString();
 
+  // FIX: Award completion XP only once per lesson (no duplicates).
+  const bonusXP = alreadyCompleted ? 0 : LESSON_REWARD_XP;
+
   return savePlayerProfile({
-    ...profile,
-    completedLessons: alreadyCompleted ? profile.completedLessons : [...profile.completedLessons, lessonKey],
-    streak: getNextStreak(profile.streak, profile.lastActiveAt),
+    ...current,
+    xp: current.xp + bonusXP,
+    completedLessons: alreadyCompleted
+      ? current.completedLessons
+      : [...current.completedLessons, lessonKey],
+    streak: getNextStreak(current.streak, current.lastActiveAt),
     lastActiveAt: now,
   });
 }
