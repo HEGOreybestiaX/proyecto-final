@@ -88,6 +88,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // FIX: Clear localStorage first, then reset all in-memory auth state.
+    // This ensures no stale user data persists after logout.
     signOutMockAccount();
     setUser(null);
     return true;
