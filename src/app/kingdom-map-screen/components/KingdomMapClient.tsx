@@ -24,13 +24,10 @@ export default function KingdomMapClient() {
 
   useEffect(() => {
     setMounted(true);
-    setPlayerProfile(
-      ensurePlayerProfile({
-        name: 'Guerrero Cósmico',
-        avatar: 'avatar-sol',
-        avatarEmoji: '⚡',
-      })
-    );
+    const refreshed = readPlayerProfile();
+    if (refreshed) {
+      setPlayerProfile(refreshed);
+    }
 
     const timer = setTimeout(() => setShowWelcome(false), 4000);
     return () => clearTimeout(timer);

@@ -13,6 +13,7 @@ import {
   ensurePlayerProfile,
   getLevelStats,
   getTotalCompletedLessons,
+  readPlayerProfile,
   upsertPlayerProfile,
 } from '@/lib/nexus-progress';
 import { useSpeech } from '@/hooks/useSpeech';
@@ -20,6 +21,15 @@ import { useSound } from '@/hooks/useSound';
 
 // ─── LESSON DATA ──────────────────────────────────────────────────────────────
 // Backend integration: GET /api/lessons?kingdom=:id
+
+const KINGDOMS = [
+  { id: 'reino-tiempo', name: 'Reino del Tiempo', color: '#f5c842', icon: '⏳' },
+  { id: 'reino-logica', name: 'Reino de la Lógica', color: '#00d4aa', icon: '🧮' },
+  { id: 'reino-vida', name: 'Reino de la Vida', color: '#2ecc8b', icon: '🌿' },
+  { id: 'reino-palabras', name: 'Reino de las Palabras', color: '#9333ea', icon: '📖' },
+  { id: 'reino-cosmos-avanzado', name: 'Cosmos Avanzado', color: '#6366f1', icon: '🌌' },
+];
+
 const LESSONS_DATA = {
   'reino-tiempo': {
     kingdomName: 'Reino del Tiempo',
@@ -220,7 +230,7 @@ const LESSONS_DATA = {
             xp: 100,
             hint: 'Primero resta 7 de ambos lados. Luego divide entre 3. El universo siempre se equilibra.',
             nexusCorrect: '¡Perfecto! x = 5. Restaste 7 y dividiste entre 3. Eso es exactamente cómo el cosmos resuelve sus misterios: paso a paso, con lógica pura.',
-            nexusIncorrect: 'Casi lo tienes. Recuerda: primero despeja el término con x. Resta 7 de ambos lados: 3x = 15. Luego divide entre 3. ¿Cuánto es 15 entre 3?',
+            nexusIncorrect: 'Casi. Recuerda: primero despeja el término con x. Resta 7 de ambos lados: 3x = 15. Luego divide entre 3. ¿Cuánto es 15 entre 3?',
             fact: 'Las ecuaciones lineales describen desde la velocidad de los cohetes hasta el precio de los productos. El álgebra está en todo.',
           },
           {
@@ -426,8 +436,8 @@ const LESSONS_DATA = {
             correctId: 'opt-c',
             xp: 85,
             hint: 'Observa los signos de puntuación que rodean la oración.',
-            nexusCorrect: '¡Exacto! Es una oración interrogativa porque formula una pregunta. Se escribe entre signos de interrogación (¿?) y expresa duda o petición de información.',
-            nexusIncorrect: 'Los signos de interrogación (¿?) son la clave. Esta oración pregunta algo, por lo tanto es interrogativa. No confundas con exclamativa (¡!) ni imperativa (órdenes).',
+            nexusCorrect: '¡Exacto! Es una oración interrogativa porque formula una pregunta. Se escribe entre signos de interrogación (¿) y expresa duda o petición de información.',
+            nexusIncorrect: 'Los signos de interrogación (¿) son la clave. Esta oración pregunta algo, por lo tanto es interrogativa. No confundas con exclamativa (¡!) ni imperativa (órdenes).',
             fact: 'El español es el único idioma del mundo que usa signos de apertura de interrogación (¿) y exclamación (¡). Esta convención fue establecida por la Real Academia Española en 1754.',
           },
         ],
@@ -574,13 +584,7 @@ export default function LessonsClient() {
   const [completedLessonsCount, setCompletedLessonsCount] = useState(0);
 
   useEffect(() => {
-    const existing = readPlayerProfile();
-    const profile = existing ?? ensurePlayerProfile({
-      name: 'Guerrero Cósmico',
-      avatar: 'avatar-sol',
-      avatarEmoji: '⚡',
-    });
-
+    const profile = readPlayerProfile() ?? ensurePlayerProfile();
     setTotalXP(profile.xp);
     setPlayerLevel(getLevelStats(profile.xp).level);
     setCompletedLessonsCount(getTotalCompletedLessons(profile));
@@ -634,7 +638,8 @@ export default function LessonsClient() {
 
     if (isCorrect) {
       const xpGained = currentQuestion.xp;
-      const newXP = totalXP + xpGained;
+      const currentProfile = readPlayerProfile() ?? ensurePlayerProfile();
+      const newXP = currentProfile.xp + xpGained;
       const nextProfile = upsertPlayerProfile({ xp: newXP });
       const nextLevel = getLevelStats(nextProfile.xp).level;
       setTotalXP(newXP);
@@ -678,12 +683,9 @@ export default function LessonsClient() {
       }, 400);
     } else {
       if (currentLesson) {
+        const currentProfile = readPlayerProfile() ?? ensurePlayerProfile();
         const updatedProfile = completeLesson(
-          ensurePlayerProfile({
-            name: 'Guerrero Cósmico',
-            avatar: 'avatar-sol',
-            avatarEmoji: '⚡',
-          }),
+          currentProfile,
           kingdomParam,
           currentLesson.id
         );
@@ -935,7 +937,7 @@ export default function LessonsClient() {
                       style={{
                         background: `linear-gradient(135deg, ${kingdomData.accentColor} 0%, rgba(${kingdomData.kingdomColor},0.7) 100%)`,
                         color: '#0a0a1a',
-                        boxShadow: `0 0 30px rgba(${kingdomData.kingdomColor},0.4)`,
+                        boxShadow: `0 0 30px rgba(${kingdomData.kingdomColor},0.3)`,
                       }}
                     >
                       ⚔️ ¡Iniciar Reto!
