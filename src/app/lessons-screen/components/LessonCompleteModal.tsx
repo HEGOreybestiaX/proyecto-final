@@ -29,6 +29,8 @@ export default function LessonCompleteModal({
   const [animatedXP, setAnimatedXP] = useState(0);
   const { speak } = useSpeech({ rate: 0.9, pitch: 0.85 });
 
+  const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+
   // Auto-read feedback when modal opens
   useEffect(() => {
     if (!visible) return;
@@ -39,7 +41,6 @@ export default function LessonCompleteModal({
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
-  const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
   useEffect(() => {
     if (!visible) {

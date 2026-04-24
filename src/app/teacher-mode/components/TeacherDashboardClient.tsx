@@ -93,6 +93,8 @@ export default function TeacherDashboardClient() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  return (
     <div className="px-4 py-6 md:px-8">
       <div className="max-w-screen-2xl mx-auto space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
