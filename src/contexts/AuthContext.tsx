@@ -88,8 +88,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    signOutMockAccount();
     setUser(null);
-    return signOutMockAccount();
+    return true;
   };
 
   const value: AuthContextValue = {

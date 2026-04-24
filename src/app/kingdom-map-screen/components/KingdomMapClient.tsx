@@ -15,11 +15,7 @@ export default function KingdomMapClient() {
   const [showWelcome, setShowWelcome] = useState(true);
   const [selectedChallenge, setSelectedChallenge] = useState<string | null>(null);
   const [playerProfile, setPlayerProfile] = useState(() =>
-    ensurePlayerProfile({
-      name: 'Guerrero Cósmico',
-      avatar: 'avatar-sol',
-      avatarEmoji: '⚡',
-    })
+    readPlayerProfile() ?? ensurePlayerProfile()
   );
 
   useEffect(() => {
@@ -33,14 +29,24 @@ export default function KingdomMapClient() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Sync HUD when returning from a lesson (window focus)
+  // Sync HUD when returning from a lesson (window focus or visibility change)
   useEffect(() => {
     const handleFocus = () => {
       const refreshed = readPlayerProfile();
       if (refreshed) setPlayerProfile(refreshed);
     };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        const refreshed = readPlayerProfile();
+        if (refreshed) setPlayerProfile(refreshed);
+      }
+    };
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const levelStats = useMemo(() => getLevelStats(playerProfile.xp), [playerProfile.xp]);
@@ -248,85 +254,16 @@ export default function KingdomMapClient() {
                       <div className="flex items-start gap-2">
                         <span className="flex-shrink-0 text-base">{challenge.icon}</span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium leading-tight" style={{ color: '#c0c0ee' }}>
-                            {challenge.text}
-                          </p>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span className="text-xs" style={{ color: '#6060aa' }}>{challenge.kingdom}</span>
-                            <span className="xp-font text-xs font-bold" style={{ color: '#f5c842' }}>
-                              +{challenge.xp} XP
-                            </span>
-                          </div>
+                          <p className="text-xs font-semibold truncate" style={{ color: '#d0d0ee' }}>{challenge.text}</p>
+                          <p className="text-xs mt-0.5" style={{ color: '#6060aa' }}>+{challenge.xp} XP · {challenge.kingdom}</p>
                         </div>
                       </div>
                     </button>
                   ))}
                 </div>
               </div>
-
-              <button
-                onClick={() => router.push('/teacher-mode')}
-                className="btn-cosmic w-full rounded-2xl px-4 py-4 text-left"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(245,200,66,0.12) 0%, rgba(124,58,237,0.18) 100%)',
-                  border: '1px solid rgba(245,200,66,0.25)',
-                }}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: '#f5c842' }}>Modo Maestro</p>
-                    <p className="mt-1 text-xs" style={{ color: '#b9b3d9' }}>
-                      Revisa alumnos, XP, niveles y avance por lecciones.
-                    </p>
-                  </div>
-                  <span className="text-2xl">🧑‍🏫</span>
-                </div>
-              </button>
-
-              <div
-                className="space-y-3 rounded-2xl p-4"
-                style={{
-                  background: 'rgba(17,17,40,0.8)',
-                  border: '1px solid #1e1e40',
-                }}
-              >
-                <p className="text-sm font-bold" style={{ color: '#a0a0cc' }}>📊 Tu Progreso</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Lecciones', value: `${totalCompletedLessons}/${totalLessons}`, icon: '📚', color: '#00d4aa' },
-                    { label: 'XP Total', value: playerProfile.xp.toLocaleString('es-MX'), icon: '⚡', color: '#f5c842' },
-                    { label: 'Racha', value: `${playerProfile.streak}d`, icon: '🔥', color: '#e85d2f' },
-                    { label: 'Nivel', value: `${levelStats.level}`, icon: '⭐', color: '#7c3aed' },
-                  ].map((stat) => (
-                    <div
-                      key={`stat-${stat.label}`}
-                      className="rounded-xl p-3 text-center"
-                      style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(42,42,90,0.8)',
-                      }}
-                    >
-                      <div className="mb-0.5 text-xl">{stat.icon}</div>
-                      <div className="xp-font text-lg font-bold" style={{ color: stat.color }}>
-                        {stat.value}
-                      </div>
-                      <div className="text-xs" style={{ color: '#6060aa' }}>{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="pb-4 pt-2 text-center">
-        <div className="flex items-center justify-center gap-3">
-          {['◆', '◇', '◈', '◇', '◆'].map((symbol, index) => (
-            <span key={`bottom-glyph-${index}`} className="text-xs" style={{ color: '#2a2a5a' }}>
-              {symbol}
-            </span>
-          ))}
         </div>
       </div>
     </div>

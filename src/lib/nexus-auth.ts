@@ -4,6 +4,7 @@ import {
   clearLegacyProgress,
   createInitialPlayerProfile,
   createLessonCompletionKey,
+  PLAYER_STORAGE_KEY,
   readPlayerProfile,
   savePlayerProfile,
 } from '@/lib/nexus-progress';
@@ -105,5 +106,9 @@ export function authenticateMockAccount(email: string, password: string) {
 }
 
 export function signOutMockAccount() {
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem(PLAYER_STORAGE_KEY);
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
   return true;
 }

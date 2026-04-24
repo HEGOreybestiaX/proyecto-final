@@ -641,13 +641,14 @@ export default function LessonsClient() {
       const currentProfile = readPlayerProfile() ?? ensurePlayerProfile();
       const newXP = currentProfile.xp + xpGained;
       const nextProfile = upsertPlayerProfile({ xp: newXP });
+      const prevLevel = getLevelStats(currentProfile.xp).level;
       const nextLevel = getLevelStats(nextProfile.xp).level;
-      setTotalXP(newXP);
-      if (nextLevel > playerLevel) {
+      setTotalXP(nextProfile.xp);
+      setPlayerLevel(nextLevel);
+      if (nextLevel > prevLevel) {
         setNewLevelReached(nextLevel);
         setTimeout(() => { setShowLevelUp(true); play('levelup'); }, 900);
       }
-      setPlayerLevel(nextLevel);
       setSessionXP((prev) => prev + xpGained);
       setCorrectCount((prev) => prev + 1);
       play('correct');
@@ -673,7 +674,7 @@ export default function LessonsClient() {
       setQuestionIndex(nextIdx);
       setQuestionState({ answered: false, selectedId: null, isCorrect: null });
       setNexusMood('challenge');
-      setNexusMessage(`Pregunta ${questionIndex + 2} de ${totalQuestions}. Mantén el enfoque. El cosmos observa cada decisión.`);
+      setNexusMessage(`Pregunta ${nextIdx + 1} de ${totalQuestions}. Mantén el enfoque. El cosmos observa cada decisión.`);
       setNexusFact(undefined);
       // Auto-read next question
       setTimeout(() => {
@@ -690,6 +691,8 @@ export default function LessonsClient() {
           currentLesson.id
         );
         setCompletedLessonsCount(getTotalCompletedLessons(updatedProfile));
+        setTotalXP(updatedProfile.xp);
+        setPlayerLevel(getLevelStats(updatedProfile.xp).level);
       }
       play('complete');
       setShowComplete(true);
@@ -718,7 +721,7 @@ export default function LessonsClient() {
             {kingdomMeta?.name ?? 'Reino desconocido'}
           </p>
           <h2 className="text-2xl font-bold mb-3" style={{ color: '#f0f0ff' }}>
-            Próximamente
+            Este reino aún está en desarrollo
           </h2>
           <p className="text-sm leading-relaxed max-w-sm" style={{ color: '#8080bb' }}>
             Las lecciones de este reino están siendo forjadas por los dioses del cosmos.
