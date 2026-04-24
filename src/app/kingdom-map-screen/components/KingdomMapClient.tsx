@@ -14,16 +14,12 @@ export default function KingdomMapClient() {
   const [mounted, setMounted] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [selectedChallenge, setSelectedChallenge] = useState<string | null>(null);
-  const [playerProfile, setPlayerProfile] = useState(() =>
-    readPlayerProfile() ?? ensurePlayerProfile()
-  );
+  const [playerProfile, setPlayerProfile] = useState<ReturnType<typeof ensurePlayerProfile> | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    const refreshed = readPlayerProfile();
-    if (refreshed) {
-      setPlayerProfile(refreshed);
-    }
+    const profile = readPlayerProfile() ?? ensurePlayerProfile();
+    setPlayerProfile(profile);
 
     const timer = setTimeout(() => setShowWelcome(false), 4000);
     return () => clearTimeout(timer);
@@ -49,7 +45,7 @@ export default function KingdomMapClient() {
     };
   }, []);
 
-  const levelStats = useMemo(() => getLevelStats(playerProfile.xp), [playerProfile.xp]);
+  const levelStats = useMemo(() => getLevelStats(playerProfile?.xp ?? 0), [playerProfile?.xp]);
   const totalCompletedLessons = getTotalCompletedLessons(playerProfile);
   const totalLessons = KINGDOMS.reduce((sum, kingdom) => sum + kingdom.totalLessons, 0);
 
@@ -57,7 +53,7 @@ export default function KingdomMapClient() {
     () =>
       KINGDOMS.map((kingdom) => ({
         ...kingdom,
-        ...getKingdomState(playerProfile, kingdom),
+        ...getKingdomState(playerProfile ?? ensurePlayerProfile(), kingdom),
       })),
     [playerProfile]
   );
@@ -100,10 +96,10 @@ export default function KingdomMapClient() {
               <h2 className="text-3xl font-bold" style={{ color: '#f0f0ff' }}>
                 ¡Bienvenido de vuelta,
                 <br />
-                {playerProfile.name}!
+                {playerProfile?.name}!
               </h2>
               <p className="mt-2 text-sm" style={{ color: '#8080bb' }}>
-                {playerProfile.streak} días de racha 🔥 · el cosmos te sonríe
+                {playerProfile?.streak} días de racha 🔥 · el cosmos te sonríe
               </p>
               <p className="mt-3 text-xs leading-relaxed max-w-xs" style={{ color: '#6060aa' }}>
                 El aprendizaje se convierte en un juego interactivo. ¡Explora los reinos y sube de nivel!
@@ -150,15 +146,17 @@ export default function KingdomMapClient() {
             </div>
 
             <div className="max-w-sm flex-1">
-              <PlayerHUD
-                name={playerProfile.name}
-                level={levelStats.level}
-                xp={levelStats.currentLevelXP}
-                xpMax={levelStats.xpForNextLevel}
-                streak={playerProfile.streak}
-                avatarEmoji={playerProfile.avatarEmoji}
-                completedLessons={totalCompletedLessons}
-              />
+              {playerProfile && (
+                <PlayerHUD
+                  name={playerProfile.name}
+                  level={levelStats.level}
+                  xp={levelStats.currentLevelXP}
+                  xpMax={levelStats.xpForNextLevel}
+                  streak={playerProfile.streak}
+                  avatarEmoji={playerProfile.avatarEmoji}
+                  completedLessons={totalCompletedLessons}
+                />
+              )}
             </div>
 
             <div className="flex items-center gap-2">
